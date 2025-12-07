@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# macOS Sistem Dosyaları
+.DS_Store
+**/.DS_Store
+
+# Node ve Derleme Çıktıları
+node_modules/
+dist/
+.vite/
