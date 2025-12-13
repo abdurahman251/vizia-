@@ -12,4 +12,7 @@ router.get("/ogrenciler", Yonetici.listeleOgrenciler);
 // ✅ Öğrenciyi onayla
 router.post("/onayla", Yonetici.onaylaOgrenci);
 
+// 🔥 YENİ: Admin/Başkan Girişi Rotası (Yetkilendirme için) 🔥
+router.post("/giris", Yonetici.girisYap);
+
 export default router;
