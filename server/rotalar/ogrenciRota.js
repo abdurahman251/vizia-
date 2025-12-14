@@ -3,6 +3,8 @@
 // =============================
 import express from "express";
 import db from "../yapilandirma/veritabani.js";
+// 🔥 YENİ: ogrenciDenetleyici'den gerekli fonksiyonları import et
+import * as Ogrenci from "../denetleyiciler/ogrenciDenetleyici.js"; 
 
 const router = express.Router();
 
@@ -14,8 +16,16 @@ router.get("/saglik", (req, res) => {
 });
 
 /* ============================================================
+   🔥 YENİ: AKTİF ÜYELİK SAYISI ROTASI (Dashboard için)
+   ============================================================ */
+// GET /api/ogrenciler/aktif-uyelik-sayisi?ogrenci_id=X
+router.get("/aktif-uyelik-sayisi", Ogrenci.aktifUyelikSayisiGetir);
+
+
+/* ============================================================
    🧾 ÖĞRENCİ KAYIT (Admin onaylı sistem)
    ============================================================ */
+// Not: Kayıt rotasını da Controller'dan çekmek daha temiz olurdu, ancak şimdilik mevcut yapıyı koruyorum.
 router.post("/kayit", async (req, res) => {
   try {
     const { adsoyad, email, sifre } = req.body;

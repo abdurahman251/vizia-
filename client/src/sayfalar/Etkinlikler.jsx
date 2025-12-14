@@ -61,12 +61,13 @@ const EventCard = ({ event, onEventClick }) => {
                        transform transition duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer ${cardBg}`}
             onClick={() => onEventClick(event)}
         >
-            {/* Görsel Alanı */}
+            {/* Görsel Alanı: h-40 ile sabit yükseklik, overflow-hidden ile taşmayı engelliyor */}
             <div className="relative h-40 overflow-hidden bg-gray-200">
                 {/* Resim URL'si Backend'den gelir */}
                 <img 
                     src={event.resim_url ? `${API_URL}${event.resim_url}` : '/images/placeholder.jpg'} 
                     alt={event.name} 
+                    // w-full h-full object-cover: Kapsayıcıyı tamamen doldur, gerekirse kırp.
                     className="w-full h-full object-cover" 
                     onError={(e) => {e.target.onerror = null; e.target.src="/images/placeholder.jpg"}}
                 />
@@ -190,10 +191,12 @@ const EventDetailModal = ({ event, onClose, onActionSuccess }) => {
                 className="bg-white rounded-xl shadow-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300"
                 onClick={(e) => e.stopPropagation()} 
             >
+                {/* Görsel Alanı: h-64 ile sabit yükseklik, overflow-hidden ile taşmayı engelliyor */}
                 <div className="relative h-64 overflow-hidden bg-gray-200">
                     <img 
                         src={event.resim_url ? `${API_URL}${event.resim_url}` : '/images/placeholder.jpg'} 
                         alt={event.ad} 
+                        // w-full h-full object-cover: Kapsayıcıyı tamamen doldur, gerekirse kırp.
                         className="w-full h-full object-cover"
                         onError={(e) => {e.target.onerror = null; e.target.src="/images/placeholder.jpg"}}
                     />

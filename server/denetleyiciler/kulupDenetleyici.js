@@ -763,4 +763,4 @@ export async function etkinlikSil(req, res) {
         console.error("🔥 etkinlikSil hatası:", err.message);
         res.status(500).json({ hata: "Etkinlik silinirken hata oluştu." });
     }
-}
+} 
