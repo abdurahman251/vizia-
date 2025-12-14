@@ -21,11 +21,6 @@ import {
 const API_URL = "http://localhost:5050"; 
 
 // ===============================================
-// YARDIMCI BİLEŞEN: YÖNETİCİ WIDGET'I (KALDIRILDI)
-// ===============================================
-// const AdminWidget = ... (Artık kullanılmıyor)
-
-// ===============================================
 // YARDIMCI BİLEŞEN: YÖNETİCİ YAN MENÜSÜ (SIDEBAR)
 // ===============================================
 const AdminSidebar = ({ admin, cikisYap, navigate, themeProps }) => {
@@ -33,15 +28,17 @@ const AdminSidebar = ({ admin, cikisYap, navigate, themeProps }) => {
     const isSuperAdmin = admin.role === 'SuperAdmin';
     const initials = admin?.adsoyad?.split(' ').map(n => n[0]).join('').toUpperCase() || 'AD';
 
-    // SUPER ADMIN LİNKLERİ (Kontrol Odaklı) - "Kulüp Üyelik Onayları" KALDIRILDI
+    // 🔥🔥🔥 SIRA DEĞİŞİKLİĞİ YAPILDI 🔥🔥🔥
     const superAdminLinks = [
         { name: "Genel Dashboard", path: "/admin/panel", icon: BuildingOfficeIcon, color: 'text-blue-600' },
+        { name: "Başkan Hesap Yönetimi", path: "/admin/baskan-hesaplari", icon: KeySolid, color: 'text-purple-600' }, // YUKARI TAŞINDI
         { name: "Öğrenci Onayları", path: "/admin/onay", icon: AcademicCapIcon, color: 'text-red-600' },
-        { name: "Başkan Hesap Yönetimi", path: "/admin/baskan-hesaplari", icon: KeySolid, color: 'text-purple-600' },
         { name: "Ring Saatleri Düzenle", path: "/admin/ringler", icon: ClockIcon, color: 'text-green-600' },
-        { name: "Sistem Ayarları", path: "/admin/ayarlar", icon: Cog6ToothIcon, color: 'text-gray-600' },
         { name: "Tüm Kulüp Bilgileri", path: "/admin/kulupler", icon: BuildingOfficeIcon, color: 'text-indigo-600' },
+        { name: "Sistem Ayarları", path: "/admin/ayarlar", icon: Cog6ToothIcon, color: 'text-gray-600' },
     ];
+    // 🔥🔥🔥 SIRA DEĞİŞİKLİĞİ SONU 🔥🔥🔥
+
 
     // BAŞKAN LİNKLERİ (Aksiyon Odaklı)
     const presidentLinks = [

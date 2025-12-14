@@ -2,15 +2,15 @@
 // server/denetleyiciler/kulupDenetleyici.js
 // =============================
 import db from "../yapilandirma/veritabani.js";
-import fs from 'fs'; 
-import path from 'path'; 
+import fs from 'fs';
+import path from 'path';
 
 /* ---------------------------------------------------
  * YETKİ KONTROL YARDIMCISI
  * --------------------------------------------------- */
 const getAdminInfo = (req) => {
     // Frontend'den gelen clubid ve role header'larını varsayıyoruz
-    const { clubid, role } = req.headers; 
+    const { clubid, role } = req.headers;
     // Header'dan gelen clubid'yi burada sayıya çeviriyoruz (parseInt)
     return { clubId: parseInt(clubid), role };
 };
@@ -19,18 +19,79 @@ const getAdminInfo = (req) => {
    1. KULÜP BİLGİLERİ YÖNETİMİ
    ============================================================ */
 
-// Tüm kulüpleri (Super Admin) veya tek bir kulübü (Başkan) getirir
+/**
+ * Yeni Kulüp Oluşturma (Süper Admin)
+ */
+export async function kulupOlustur(req, res) {
+    const { role } = req.headers;
+    const { ad, baskan_email, baskan_sifre } = req.body;
+
+    if (role !== 'SuperAdmin') {
+        return res.status(403).json({ hata: "Sadece Süper Admin yeni kulüp oluşturabilir." });
+    }
+    if (!ad || !baskan_email || !baskan_sifre) {
+        return res.status(400).json({ hata: "Kulüp Adı, Başkan E-posta ve Şifre zorunludur." });
+    }
+    if (baskan_sifre.length < 4) {
+         return res.status(400).json({ hata: "Başkan şifresi en az 4 karakter olmalıdır." });
+    }
+
+    try {
+        // 1. Kulüp Adı Tekrarlama Kontrolü
+        const existingClub = await db.get("SELECT ad FROM kulupler WHERE ad = ?", [ad]);
+        if (existingClub) {
+            return res.status(409).json({ hata: `"${ad}" adında bir kulüp zaten mevcut.` });
+        }
+
+        // 2. E-posta Tekrarlama Kontrolü (Başka kulübe atanmış olmamalı)
+        const emailCheck = await db.get("SELECT ad FROM kulupler WHERE baskan_email = ?", [baskan_email]);
+        if (emailCheck) {
+            return res.status(409).json({ hata: `Bu e-posta (${baskan_email}) zaten ${emailCheck.ad} kulübüne atanmıştır.` });
+        }
+
+        // 3. Kulübü ve Başkan Hesabını Oluştur
+        await db.run(
+            `INSERT INTO kulupler (
+                ad, baskan_email, baskan_sifre_hash,
+                slogan, aciklama, kategori, aktif_uye_sayisi, baskan_adsoyad
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                ad,
+                baskan_email,
+                baskan_sifre,
+                // Diğer alanlar varsayılan değerler
+                'Lütfen kulüp sloganını giriniz.',
+                'Kulüp henüz açıklama eklememiştir.',
+                'Sosyal', // Varsayılan Kategori
+                0, // Varsayılan Üye Sayısı
+                'Kulüp Başkanı' // Varsayılan Başkan Adı
+            ]
+        );
+
+        res.json({ mesaj: `✅ Yeni Kulüp "${ad}" başarıyla oluşturuldu. Başkan giriş bilgileri: ${baskan_email}` });
+
+    } catch (err) {
+        console.error("🔥 kulupOlustur hatası:", err.message);
+        res.status(500).json({ hata: "Kulüp oluşturma başarısız." });
+    }
+}
+
+// Tüm kulüpleri (Super Admin) veya tek bir kulübü (Başkan/Öğrenci) getirir
 export async function kulupBilgileriGetir(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
         let kulupler;
-
-        if (role === 'SuperAdmin') {
+        
+        // Öğrenci/Misafir veya Super Admin, tüm kulüpleri görür
+        // role yoksa, kulüpler herkes için listelenir (Öğrenci Paneli)
+        if (role === 'SuperAdmin' || !role) {
             kulupler = await db.all("SELECT * FROM kulupler ORDER BY id");
-        } else if (role === 'ClubPresident' && clubId) {
+        } 
+        // Kulüp Başkanı sadece kendi kulübünü görür
+        else if (role === 'ClubPresident' && clubId) {
             kulupler = await db.all("SELECT * FROM kulupler WHERE id = ?", [clubId]);
         } else {
-            return res.status(403).json({ hata: "Yetkisiz erişim veya eksik bilgi." });
+            kulupler = await db.all("SELECT * FROM kulupler ORDER BY id");
         }
 
         res.json(kulupler);
@@ -73,7 +134,7 @@ export async function kulupBilgileriniGuncelle(req, res) {
 // Süper Admin tüm başkanların hesaplarını listeler
 export async function listeleBaskanHesaplari(req, res) {
     const { role } = req.headers;
-    
+
     if (role !== 'SuperAdmin') {
         return res.status(403).json({ hata: "Sadece Süper Admin bu listeyi görebilir." });
     }
@@ -93,7 +154,7 @@ export async function listeleBaskanHesaplari(req, res) {
 export async function guncelleBaskanHesabi(req, res) {
     const { role } = req.headers;
     const { id } = req.params;
-    const { baskan_email, new_password } = req.body; 
+    const { baskan_email, new_password } = req.body;
 
     if (role !== 'SuperAdmin') {
         return res.status(403).json({ hata: "Sadece Süper Admin bu işlemi yapabilir." });
@@ -106,21 +167,21 @@ export async function guncelleBaskanHesabi(req, res) {
         let sql = "UPDATE kulupler SET baskan_email = ?";
         const params = [baskan_email];
         let mesaj = "E-posta başarıyla güncellendi.";
-        
+
         // 1. ŞİFRE GÜNCELLEMESİ (Yeni şifre varsa)
         if (new_password) {
             if (new_password.length < 4) { // Minimum şifre uzunluğu kontrolü
                 return res.status(400).json({ hata: "Şifre en az 4 karakter olmalıdır." });
             }
-            sql += ", baskan_sifre_hash = ?"; 
+            sql += ", baskan_sifre_hash = ?";
             params.push(new_password); // Şifre açık metin olarak kaydediliyor
             mesaj = "E-posta ve Şifre başarıyla güncellendi.";
         }
-        
+
         // 2. SON KOMUTU TAMAMLA VE ÇALIŞTIR
         sql += " WHERE id = ?";
         params.push(id);
-        
+
         const result = await db.run(sql, params);
 
         if (result.changes === 0) {
@@ -144,7 +205,7 @@ export async function guncelleBaskanHesabi(req, res) {
 export async function uyelikBasvurusuYap(req, res) {
     try {
         const { kulup_id, ogrenci_id } = req.body;
-        
+
         await db.run(
             "INSERT INTO kulup_uyelikleri (kulup_id, ogrenci_id) VALUES (?, ?)",
             [kulup_id, ogrenci_id]
@@ -164,14 +225,14 @@ export async function bekleyenUyeleriListele(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
         let sql = `
-            SELECT 
+            SELECT
                 u.id, u.onay_durumu, u.basvuru_tarihi,
                 k.ad AS kulup_ad,
                 o.adsoyad AS ogrenci_adsoyad, o.email AS ogrenci_email
             FROM kulup_uyelikleri u
             JOIN kulupler k ON u.kulup_id = k.id
             JOIN ogrenciler o ON u.ogrenci_id = o.id
-            WHERE u.onay_durumu = 'Beklemede' 
+            WHERE u.onay_durumu = 'Beklemede'
         `;
         const params = [];
 
@@ -181,7 +242,7 @@ export async function bekleyenUyeleriListele(req, res) {
         } else if (role !== 'SuperAdmin') {
              return res.status(403).json({ hata: "Yetkisiz erişim." });
         }
-        
+
         const bekleyenler = await db.all(sql + " ORDER BY u.basvuru_tarihi DESC", params);
         res.json(bekleyenler);
 
@@ -214,7 +275,7 @@ export async function uyelikDurumuGuncelle(req, res) {
         if (durum === 'Onaylandı') {
              await db.run("UPDATE kulupler SET aktif_uye_sayisi = aktif_uye_sayisi + 1 WHERE id = ?", [basvuru.kulup_id]);
         }
-        
+
         res.json({ mesaj: `Başvuru durumu başarıyla ${durum} olarak güncellendi.` });
 
     } catch (err) {
@@ -250,13 +311,14 @@ export async function ogrenciUyelikleriniGetir(req, res) {
     try {
         const { ogrenci_id } = req.params;
 
+        // 🔥 Düzeltme: SQL sorgusundaki fazla boşluklar kaldırıldı
         const uyelikler = await db.all(
-            `SELECT 
-                u.id, 
-                u.onay_durumu, 
+            `SELECT
+                u.id,
+                u.onay_durumu,
                 u.basvuru_tarihi,
                 k.ad AS kulup_ad,
-                k.kategori 
+                k.kategori
             FROM kulup_uyelikleri u
             JOIN kulupler k ON u.kulup_id = k.id
             WHERE u.ogrenci_id = ?
@@ -275,20 +337,20 @@ export async function ogrenciUyelikleriniGetir(req, res) {
 export async function onaylananUyeleriListele(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
-        
+
         if (role !== 'ClubPresident' || !clubId) {
             return res.status(403).json({ hata: "Yetkisiz erişim." });
         }
-        
+
         const sql = `
-            SELECT 
-                u.id, 
+            SELECT
+                u.id,
                 u.basvuru_tarihi,
-                o.adsoyad AS ogrenci_adsoyad, 
+                o.adsoyad AS ogrenci_adsoyad,
                 o.email AS ogrenci_email
             FROM kulup_uyelikleri u
             JOIN ogrenciler o ON u.ogrenci_id = o.id
-            WHERE u.kulup_id = ? AND u.onay_durumu = 'Onaylandı' 
+            WHERE u.kulup_id = ? AND u.onay_durumu = 'Onaylandı'
             ORDER BY o.adsoyad
         `;
         const uyeler = await db.all(sql, [clubId]);
@@ -304,19 +366,19 @@ export async function onaylananUyeleriListele(req, res) {
 export async function uyeliktenCikar(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
-        const { uyelik_id, durum } = req.body; 
+        const { uyelik_id, durum } = req.body;
 
         if (role !== 'ClubPresident' || !clubId) {
             return res.status(403).json({ hata: "Bu işlemi yapmaya yetkiniz yok." });
         }
-        
+
         const uyelik = await db.get("SELECT kulup_id FROM kulup_uyelikleri WHERE id = ?", [uyelik_id]);
         if (!uyelik || uyelik.kulup_id !== clubId) {
             return res.status(403).json({ hata: "Sadece kendi kulübünüzün üyelerini çıkarabilirsiniz." });
         }
 
         await db.run("UPDATE kulup_uyelikleri SET onay_durumu = ? WHERE id = ?", [durum, uyelik_id]);
-        
+
         await db.run("UPDATE kulupler SET aktif_uye_sayisi = aktif_uye_sayisi - 1 WHERE id = ?", [clubId]);
 
         res.json({ mesaj: `Üye başarıyla kulüpten çıkarıldı.` });
@@ -336,7 +398,7 @@ export async function uyeliktenCikar(req, res) {
 export async function mesajGonder(req, res) {
     try {
         const { kulup_id, ogrenci_email, mesaj_metni } = req.body;
-        
+
         await db.run(
             "INSERT INTO kulup_mesajlari (kulup_id, ogrenci_email, mesaj_metni) VALUES (?, ?, ?)",
             [kulup_id, ogrenci_email, mesaj_metni]
@@ -352,6 +414,7 @@ export async function mesajGonder(req, res) {
 export async function gelenMesajlariListele(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
+        // 🔥 Düzeltme: SQL sorgusundaki fazla boşluklar kaldırıldı
         let sql = `
             SELECT m.*, k.ad AS kulup_ad, o.adsoyad AS ogrenci_adsoyad, o.email AS ogrenci_email
             FROM kulup_mesajlari m
@@ -368,7 +431,7 @@ export async function gelenMesajlariListele(req, res) {
         } else if (role !== 'SuperAdmin') {
              return res.status(403).json({ hata: "Yetkisiz erişim." });
         }
-        
+
         const mesajlar = await db.all(sql + " ORDER BY m.olusturma_tarihi DESC", params);
         res.json(mesajlar);
 
@@ -411,9 +474,10 @@ export async function ogrenciMesajlariniGetir(req, res) {
         const { ogrenci_email } = req.params;
 
         // Mesajları kulüp adıyla birleştirip, cevaplanmış mesajları da getirir
+        // 🔥 Düzeltme: SQL sorgusundaki fazla boşluklar kaldırıldı
         const mesajlar = await db.all(
-            `SELECT 
-                m.*, 
+            `SELECT
+                m.*,
                 k.ad AS kulup_ad
             FROM kulup_mesajlari m
             JOIN kulupler k ON m.kulup_id = k.id
@@ -434,7 +498,7 @@ export async function topluMesajGonder(req, res) {
     try {
         const { clubId, role } = getAdminInfo(req);
         const { kulup_id, mesaj_metni } = req.body;
-        
+
         // 1. Yetki ve Kulüp Kontrolü: Sadece ilgili kulübün başkanı toplu mesaj atabilir.
         if (role !== 'ClubPresident' || clubId !== parseInt(kulup_id)) { // kulup_id'yi de sayıya çevirerek karşılaştır
             return res.status(403).json({ hata: "Bu kulübe toplu mesaj göndermeye yetkiniz yok." });
@@ -454,17 +518,18 @@ export async function topluMesajGonder(req, res) {
 
         // 3. Her üye için tek tek mesaj kaydı ekle
         const kulup = await db.get("SELECT ad FROM kulupler WHERE id = ?", [kulup_id]);
-        const mesajBasligi = `${kulup.ad} Duyurusu`; 
-        
+        const mesajBasligi = `${kulup.ad} Duyurusu`;
+
+        // 🔥 Düzeltme: SQL sorgusundaki fazla boşluklar kaldırıldı
         for (const uye of uyeler) {
             await db.run(
-                `INSERT INTO kulup_mesajlari 
-                 (kulup_id, ogrenci_email, mesaj_metni, cevaplandi, cevap_metni, cevap_tarihi) 
-                 VALUES (?, ?, ?, 1, ?, datetime('now'))`, 
+                `INSERT INTO kulup_mesajlari
+                 (kulup_id, ogrenci_email, mesaj_metni, cevaplandi, cevap_metni, cevap_tarihi)
+                 VALUES (?, ?, ?, 1, ?, datetime('now'))`,
                 [kulup_id, uye.email, mesajBasligi, mesaj_metni]
             );
         }
-        
+
         res.json({ mesaj: `✅ Mesaj, ${uyeler.length} üyeye başarıyla gönderildi.` });
 
     } catch (err) {
@@ -485,17 +550,18 @@ export async function topluMesajGonder(req, res) {
 // Tüm etkinlikleri listeler (Kayıt ve Oy durumu ile birlikte)
 export async function listeleEtkinlikler(req, res) {
     try {
-        const { ogrenci_id } = req.query; 
-        
+        const { ogrenci_id } = req.query;
+
+        // 🔥 Düzeltme: SQL sorgusundaki fazla boşluklar kaldırıldı
         let sql = `
-            SELECT 
+            SELECT
                 e.id, e.kulup_id, e.ad, e.aciklama, e.tarih, e.saat, e.yer, e.kapasite, e.resim_url,
                 k.ad AS clubName,
                 k.kategori AS category,
-                
+
                 -- Kayıt Sayısı
                 (SELECT COUNT(id) FROM etkinlik_kayitlari WHERE etkinlik_id = e.id) AS registered_count,
-                
+
                 -- Beğeni Sayıları
                 (SELECT COUNT(id) FROM etkinlik_oylamalari WHERE etkinlik_id = e.id AND oy_tipi = 1) AS like_count,
                 (SELECT COUNT(id) FROM etkinlik_oylamalari WHERE etkinlik_id = e.id AND oy_tipi = 0) AS dislike_count
@@ -505,7 +571,7 @@ export async function listeleEtkinlikler(req, res) {
             sql += `,
                 -- Kullanıcının Kayıt Durumu (1 veya 0)
                 EXISTS(SELECT 1 FROM etkinlik_kayitlari WHERE etkinlik_id = e.id AND ogrenci_id = ?) AS user_is_registered,
-                
+
                 -- Kullanıcının Oy Durumu (1: Like, 0: Dislike, NULL: Oylanmadı)
                 (SELECT oy_tipi FROM etkinlik_oylamalari WHERE etkinlik_id = e.id AND ogrenci_id = ?) AS user_vote
             `;
@@ -516,7 +582,7 @@ export async function listeleEtkinlikler(req, res) {
             JOIN kulupler k ON e.kulup_id = k.id
             ORDER BY e.tarih DESC
         `;
-        
+
         const params = [];
         if (ogrenci_id) {
             params.push(ogrenci_id, ogrenci_id);
@@ -535,24 +601,24 @@ export async function listeleEtkinlikler(req, res) {
 export async function etkinligeKaydol(req, res) {
     try {
         const { etkinlik_id, ogrenci_id } = req.body;
-        
+
         // Kapasite Kontrolü
         const etkinlik = await db.get("SELECT kapasite FROM etkinlikler WHERE id = ?", [etkinlik_id]);
-        
+
         if (etkinlik && etkinlik.kapasite > 0) {
              const kayitliSayisi = await db.get("SELECT COUNT(id) AS count FROM etkinlik_kayitlari WHERE etkinlik_id = ?", [etkinlik_id]);
-             
+
              if (kayitliSayisi.count >= etkinlik.kapasite) {
                  return res.status(400).json({ hata: "Etkinlik kapasitesi dolmuştur." });
              }
         }
-        
+
         await db.run(
             "INSERT INTO etkinlik_kayitlari (etkinlik_id, ogrenci_id) VALUES (?, ?)",
             [etkinlik_id, ogrenci_id]
         );
         res.json({ mesaj: "✅ Etkinliğe başarıyla kaydoldunuz." });
-        
+
     } catch (err) {
         if (err.message.includes("UNIQUE")) {
             return res.status(409).json({ hata: "Bu etkinliğe zaten kaydolmuşsunuz." });
@@ -565,8 +631,8 @@ export async function etkinligeKaydol(req, res) {
 // Öğrenci Oylama İşlemi
 export async function etkinlikOyla(req, res) {
     try {
-        const { etkinlik_id, ogrenci_id, oy_tipi } = req.body; 
-        
+        const { etkinlik_id, ogrenci_id, oy_tipi } = req.body;
+
         // 1. İptal Etme İşlemi
         if (oy_tipi === null) {
             await db.run(
@@ -575,20 +641,20 @@ export async function etkinlikOyla(req, res) {
             );
             return res.json({ mesaj: "Oylama başarıyla iptal edildi." });
         }
-        
+
         // 2. Yeni Oy Veya Mevcut Oyu Güncelleme
         if (![0, 1].includes(oy_tipi)) {
             return res.status(400).json({ hata: "Geçersiz oy tipi." });
         }
-        
+
         await db.run(
-            `INSERT INTO etkinlik_oylamalari (etkinlik_id, ogrenci_id, oy_tipi) 
+            `INSERT INTO etkinlik_oylamalari (etkinlik_id, ogrenci_id, oy_tipi)
              VALUES (?, ?, ?)
-             ON CONFLICT(etkinlik_id, ogrenci_id) 
+             ON CONFLICT(etkinlik_id, ogrenci_id)
              DO UPDATE SET oy_tipi = ?`,
             [etkinlik_id, ogrenci_id, oy_tipi, oy_tipi]
         );
-        
+
         res.json({ mesaj: `Oylama başarıyla kaydedildi.` });
 
     } catch (err) {
@@ -606,7 +672,7 @@ export async function etkinlikOyla(req, res) {
 export async function listeleBaskanEtkinlikleri(req, res) {
     try {
         // URL'den gelen clubId'yi al ve sayıya çevir
-        const clubIdParam = parseInt(req.params.clubId); 
+        const clubIdParam = parseInt(req.params.clubId);
         const { clubId: clubIdHeader, role } = getAdminInfo(req); // Header'dan gelen ID (Zaten sayı)
 
         // KRİTİK KONTROL: URL'deki ID, Header'daki ID'ye eşit mi VE rol Başkan mı?
@@ -617,7 +683,7 @@ export async function listeleBaskanEtkinlikleri(req, res) {
 
         // URL'den gelen ID'yi sorguda kullanıyoruz (Zaten sayıya çevrildi)
         const sql = `
-            SELECT 
+            SELECT
                 e.id, e.kulup_id, e.ad, e.aciklama, e.tarih, e.saat, e.yer, e.kapasite, e.resim_url,
                 k.ad AS clubName,
                 (SELECT COUNT(id) FROM etkinlik_kayitlari WHERE etkinlik_id = e.id) AS registered_count,
@@ -628,7 +694,7 @@ export async function listeleBaskanEtkinlikleri(req, res) {
             WHERE e.kulup_id = ?
             ORDER BY e.tarih DESC
         `;
-        
+
         const etkinlikler = await db.all(sql, [clubIdParam]);
         res.json(etkinlikler);
 
@@ -644,29 +710,29 @@ export async function etkinlikEkle(req, res) {
         // Form verileri req.body'den, dosya ise req.file'dan gelir (Multer sayesinde)
         const { ad, aciklama, tarih, saat, yer, kapasite, kulup_id } = req.body;
         const { clubId: clubIdHeader, role } = getAdminInfo(req); // clubIdHeader zaten sayı
-        
+
         // KRİTİK DÜZELTME: Sadece Header'dan gelen güvenilir clubIdHeader'ı kullanıyoruz
         if (role !== 'ClubPresident' || parseInt(kulup_id) !== clubIdHeader) {
             // Yüklenen dosyayı sil
             if (req.file) fs.unlinkSync(req.file.path);
             return res.status(403).json({ hata: "Sadece kendi kulübünüz için etkinlik ekleyebilirsiniz." });
         }
-        
+
         if (!ad || !tarih || !kulup_id) {
             if (req.file) fs.unlinkSync(req.file.path);
             return res.status(400).json({ hata: "Etkinlik Adı, Tarihi ve Kulüp ID'si zorunludur." });
         }
 
         // Resim Yolu: Multer dosya yüklediyse yolu al, yoksa boş bırak
-        const resim_url = req.file ? `/uploads/events/${req.file.filename}` : null; 
-        
+        const resim_url = req.file ? `/uploads/events/${req.file.filename}` : null;
+
         // INSERT işleminde header'dan gelen ve doğrulanan clubIdHeader'ı kullan
         await db.run(
-            `INSERT INTO etkinlikler (kulup_id, ad, aciklama, tarih, saat, yer, kapasite, resim_url) 
+            `INSERT INTO etkinlikler (kulup_id, ad, aciklama, tarih, saat, yer, kapasite, resim_url)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [clubIdHeader, ad, aciklama, tarih, saat, yer, kapasite || 0, resim_url]
         );
-        
+
         res.json({ mesaj: "✅ Etkinlik başarıyla eklendi ve yayınlandı." });
 
     } catch (err) {
@@ -682,20 +748,20 @@ export async function etkinlikGuncelle(req, res) {
         const { id } = req.params;
         const { ad, aciklama, tarih, saat, yer, kapasite } = req.body;
         const { clubId: clubIdHeader, role } = getAdminInfo(req); // clubIdHeader zaten sayı
-        
+
         // 1. Yetki ve sahiplik kontrolü
         const existingEvent = await db.get("SELECT kulup_id, resim_url FROM etkinlikler WHERE id = ?", [id]);
         if (!existingEvent) {
              if (req.file) fs.unlinkSync(req.file.path);
              return res.status(404).json({ hata: "Güncellenecek etkinlik bulunamadı." });
         }
-        
+
         // Yetki Kontrolü: Body'den gelen kulup_id yerine, mevcut etkinliğin kulup_id'sini header ile karşılaştır
         if (role !== 'ClubPresident' || existingEvent.kulup_id !== clubIdHeader) {
              if (req.file) fs.unlinkSync(req.file.path);
              return res.status(403).json({ hata: "Bu etkinliği düzenlemeye yetkiniz yok." });
         }
-        
+
         // 2. Resim yolu yönetimi
         let resim_url = existingEvent.resim_url;
         if (req.file) {
@@ -708,9 +774,9 @@ export async function etkinlikGuncelle(req, res) {
             }
             resim_url = `/uploads/events/${req.file.filename}`;
         }
-        
+
         await db.run(
-            `UPDATE etkinlikler SET 
+            `UPDATE etkinlikler SET
              ad = ?, aciklama = ?, tarih = ?, saat = ?, yer = ?, kapasite = ?, resim_url = ?
              WHERE id = ?`,
             [ad, aciklama, tarih, saat, yer, kapasite, resim_url, id]
@@ -736,12 +802,12 @@ export async function etkinlikSil(req, res) {
         if (!existingEvent) {
              return res.status(404).json({ hata: "Silinecek etkinlik bulunamadı." });
         }
-        
+
         // Yetki Kontrolü
         if (role !== 'ClubPresident' || existingEvent.kulup_id !== clubIdHeader) {
              return res.status(403).json({ hata: "Bu etkinliği silmeye yetkiniz yok." });
         }
-        
+
         // 2. Eski resmi diskten sil
         if (existingEvent.resim_url) {
             const absolutePath = path.join(process.cwd(), 'uploads', 'events', existingEvent.resim_url.split('/').pop());
@@ -756,11 +822,11 @@ export async function etkinlikSil(req, res) {
 
         // 4. Ana etkinliği sil
         await db.run("DELETE FROM etkinlikler WHERE id = ?", [id]);
-        
+
         res.json({ mesaj: "✅ Etkinlik başarıyla silindi." });
 
     } catch (err) {
         console.error("🔥 etkinlikSil hatası:", err.message);
         res.status(500).json({ hata: "Etkinlik silinirken hata oluştu." });
     }
-} 
+}

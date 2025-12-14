@@ -19,6 +19,9 @@ router.post("/etkinlikler/oyla", Kulup.etkinlikOyla);
 
 
 // 1. KULÜP YÖNETİMİ & SÜPER ADMİN
+// 🔥 YENİ ROTA: SÜPER ADMİN YENİ KULÜP OLUŞTURUR (AD, EMAIL, ŞİFRE)
+router.post("/olustur", Kulup.kulupOlustur);
+// Mevcut rotalar
 router.get("/bilgiler", Kulup.kulupBilgileriGetir);
 router.put("/bilgiler/guncelle", Kulup.kulupBilgileriniGuncelle);
 router.get("/admin/baskanlar", Kulup.listeleBaskanHesaplari); 
