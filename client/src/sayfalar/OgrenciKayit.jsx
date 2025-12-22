@@ -1,133 +1,197 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  ArrowLeftIcon, 
+  EnvelopeIcon, 
+  LockClosedIcon, 
+  UserIcon,
+  ChevronRightIcon,
+  SparklesIcon,
+  UserPlusIcon
+} from "@heroicons/react/24/outline";
 
 export default function OgrenciKayit() {
   const navigate = useNavigate();
-
-  // 🧠 State'ler
-  const [adsoyad, setAdsoyad] = useState("");
-  const [email, setEmail] = useState("");
-  const [sifre, setSifre] = useState("");
+  const [formData, setFormData] = useState({
+    adsoyad: "",
+    email: "",
+    sifre: "",
+  });
   const [mesaj, setMesaj] = useState("");
-  const [hata, setHata] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Öğrenci kaydı gönder
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const kayitOl = async (e) => {
     e.preventDefault();
     setMesaj("");
-    setHata("");
+    setIsLoading(true);
 
     try {
       const res = await fetch("http://localhost:5050/api/ogrenciler/kayit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adsoyad, email, sifre }),
+        body: JSON.stringify(formData),
       });
-
       const data = await res.json();
 
       if (res.ok) {
-        setMesaj(data.mesaj);
-        setAdsoyad("");
-        setEmail("");
-        setSifre("");
+        setMesaj("✅ Kayıt başarılı! Yönlendiriliyorsunuz...");
+        setTimeout(() => navigate("/ogrenci/giris"), 2000);
       } else {
-        setHata(data.hata || "Bir hata oluştu.");
+        setMesaj(data.hata || "Kayıt sırasında bir hata oluştu.");
       }
-    } catch (err) {
-      console.error("Kayıt hatası:", err);
-      setHata("Sunucuya bağlanılamadı.");
+    } catch {
+      setMesaj("Sunucu hatası. Lütfen sonra tekrar deneyin.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-red-600 via-white to-red-200">
-      {/* 🔙 Portala Dön */}
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-6 left-6 flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 transform hover:scale-105 transition-all duration-300"
-      >
-        <ArrowLeftIcon className="w-5 h-5" />
-        <span>Portala Dön</span>
-      </button>
-
-      {/* 🧾 Öğrenci Kayıt Formu */}
-      <div className="bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl p-10 w-full max-w-md border-t-4 border-red-600 animate-fade-in">
-        <h2 className="text-3xl font-bold text-center mb-8 text-red-700">
-          Öğrenci Kayıt
-        </h2>
-
-        <form onSubmit={kayitOl} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              Ad Soyad
-            </label>
-            <input
-              type="text"
-              value={adsoyad}
-              onChange={(e) => setAdsoyad(e.target.value)}
-              placeholder="Adınızı ve soyadınızı girin"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-600"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              E-posta
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ogrenci@site.com"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-600"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              Şifre
-            </label>
-            <input
-              type="password"
-              value={sifre}
-              onChange={(e) => setSifre(e.target.value)}
-              placeholder="•••••••"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-600"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all duration-300 shadow-md"
-          >
-            Kayıt Ol
-          </button>
-        </form>
-
-        {/* ✅ Mesaj veya hata */}
-        {mesaj && (
-          <p className="mt-5 text-center text-green-600 font-medium">{mesaj}</p>
-        )}
-        {hata && (
-          <p className="mt-5 text-center text-red-600 font-medium">{hata}</p>
-        )}
-
-        {/* Alt bağlantı */}
-        <p className="text-gray-600 text-sm mt-5 text-center">
-          Zaten hesabınız var mı?{" "}
-          <button
-            onClick={() => navigate("/ogrenci/giris")}
-            className="text-red-600 hover:underline font-medium"
-          >
-            Giriş Yap
-          </button>
-        </p>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#fafafa] relative overflow-hidden font-sans">
+      
+      {/* 🚀 Performans Dostu Arka Plan */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-5%] right-[-5%] w-[45%] h-[45%] bg-red-500/5 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-5%] left-[-5%] w-[45%] h-[45%] bg-emerald-500/5 rounded-full blur-[120px]"></div>
       </div>
+
+      {/* ⭐ GÜNCEL: Üst Navigasyon - Direkt Portala Dönüş */}
+      <motion.button
+        onClick={() => navigate("/")}
+        className="absolute top-10 left-10 z-50 flex items-center gap-2 group bg-white/80 backdrop-blur-sm px-5 py-2.5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
+      >
+        <ArrowLeftIcon className="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" />
+        <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Portala Dön</span>
+      </motion.button>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative z-10 w-full max-w-[460px] px-6 py-10"
+      >
+        <div className="bg-white border border-gray-100 rounded-[3.5rem] p-10 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.04)] relative">
+          
+          {/* Minimal Yılbaşı Detayı */}
+          <SparklesIcon className="absolute top-10 right-10 w-6 h-6 text-red-200 animate-pulse" />
+
+          {/* İkon Bölümü */}
+          <div className="flex justify-center mb-8">
+            <div className="relative p-6 rounded-[2.2rem] bg-[#fcfcfc] border border-gray-50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.01),0_10px_20px_rgba(0,0,0,0.02)]">
+              <UserPlusIcon className="w-12 h-12 text-red-600" />
+              <span className="absolute -top-1 -right-1 text-xl drop-shadow-sm">🎄</span>
+            </div>
+          </div>
+
+          <div className="text-center mb-10">
+            <h2 className="text-[36px] font-[1000] text-slate-900 tracking-tight leading-tight">
+              Yeni Hesap
+            </h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-2">Doğuş Portal Kayıt</p>
+          </div>
+
+          <form onSubmit={kayitOl} className="space-y-4">
+            
+            {/* Ad Soyad */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <UserIcon className="w-5 h-5 text-gray-300 group-focus-within:text-red-500 transition-colors duration-200" />
+              </div>
+              <input
+                type="text"
+                name="adsoyad"
+                placeholder="Adınız Soyadınız"
+                value={formData.adsoyad}
+                onChange={handleChange}
+                className="w-full pl-14 pr-6 py-[1.25rem] bg-gray-50/50 border border-transparent rounded-[1.5rem] text-[15px] text-slate-800 outline-none focus:bg-white focus:border-red-100 focus:shadow-sm transition-all duration-200 font-bold placeholder:text-gray-300"
+                required
+              />
+            </div>
+
+            {/* E-posta */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <EnvelopeIcon className="w-5 h-5 text-gray-300 group-focus-within:text-red-500 transition-colors duration-200" />
+              </div>
+              <input
+                type="email"
+                name="email"
+                placeholder="Öğrenci E-postası"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full pl-14 pr-6 py-[1.25rem] bg-gray-50/50 border border-transparent rounded-[1.5rem] text-[15px] text-slate-800 outline-none focus:bg-white focus:border-red-100 focus:shadow-sm transition-all duration-200 font-bold placeholder:text-gray-300"
+                required
+              />
+            </div>
+
+            {/* Şifre */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                <LockClosedIcon className="w-5 h-5 text-gray-300 group-focus-within:text-red-500 transition-colors duration-200" />
+              </div>
+              <input
+                type="password"
+                name="sifre"
+                placeholder="Şifre Belirleyin"
+                value={formData.sifre}
+                onChange={handleChange}
+                className="w-full pl-14 pr-6 py-[1.25rem] bg-gray-50/50 border border-transparent rounded-[1.5rem] text-[15px] text-slate-800 outline-none focus:bg-white focus:border-red-100 focus:shadow-sm transition-all duration-200 font-bold placeholder:text-gray-300"
+                required
+              />
+            </div>
+
+            <AnimatePresence>
+              {mesaj && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={`py-3.5 px-6 rounded-2xl text-[11px] font-black uppercase text-center border ${
+                    mesaj.includes("başarılı") ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
+                  }`}
+                >
+                  {mesaj}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              disabled={isLoading}
+              className="w-full h-[70px] mt-4 bg-slate-900 rounded-[1.8rem] relative group overflow-hidden shadow-xl shadow-slate-200 active:shadow-inner transition-all duration-300"
+            >
+              <div className="absolute inset-0 bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 flex items-center justify-center gap-3">
+                <span className="text-[14px] font-black text-white uppercase tracking-[0.2em]">
+                  {isLoading ? "Hesap Açılıyor..." : "Kaydı Tamamla"}
+                </span>
+                {!isLoading && <ChevronRightIcon className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform duration-300" />}
+              </div>
+            </motion.button>
+
+          </form>
+
+          <div className="mt-12 text-center pt-8 border-t border-gray-50">
+            <button 
+                onClick={() => navigate("/ogrenci/giris")}
+                className="group inline-flex items-center gap-2"
+            >
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Zaten üye misin?</span>
+                <span className="text-[11px] font-black text-red-600 uppercase tracking-widest group-hover:text-slate-900 transition-colors underline underline-offset-4 decoration-2">Giriş Yap</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Footer info */}
+        <div className="mt-10 text-center space-y-1 opacity-40">
+            <p className="text-[9px] font-black tracking-[0.4em] text-slate-800 uppercase italic">Vizia Platform • 2026</p>
+        </div>
+      </motion.div>
+
     </div>
   );
 }

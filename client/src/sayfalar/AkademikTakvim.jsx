@@ -1,7 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, CalendarDaysIcon, FunnelIcon } from '@heroicons/react/24/outline'; 
-import { AIChat } from './AIChat'; // ⭐ AIChat Doğru Konumdan İçeri Aktarıldı.
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    ArrowLeftIcon, 
+    CalendarDaysIcon, 
+    FunnelIcon, 
+    ClockIcon, 
+    ArrowDownTrayIcon,
+    CheckBadgeIcon,
+    BellAlertIcon
+} from '@heroicons/react/24/outline'; 
+import { AIChat } from './AIChat';
 
 // ************************************************************
 // ⭐⭐ VIZIA KAMPÜS AKADEMİK TAKVİM VERİLERİ (EKSİKSİZ VE HATASIZ) ⭐⭐
@@ -61,7 +70,7 @@ const takvimVerisi = [
     { tarih: '2 Şubat 2026', olay: 'Azami Öğrenim Süresini Dolduranlar İçin Sınav Başvuru Değerlendirme Sonucu İlanı', tur: 'İlan', donem: 'Güz', renk: 'bg-green-700' },
     { tarih: '4-5 Şubat 2026', olay: 'Azami Öğrenim Süresini Dolduranlar İçin Ek Sınav Tarihleri', tur: 'Sınav', donem: 'Güz', renk: 'bg-yellow-600' },
     { tarih: '5 Şubat 2026', olay: 'Azami Öğrenim Süresini Dolduranlar İçin Sınav Notlarının Sisteme Girişi Son Tarihi', tur: 'Sınav', donem: 'Güz', renk: 'bg-gray-700' },
-    
+
     // --- BAHAR DÖNEMİ (Tüm Metinler Tek Satıra İndirildi) ---
     { tarih: '10-13 Şubat 2026', olay: 'Bahar Dönemi Ders Kayıt Tarihleri', tur: 'Kayıt', donem: 'Bahar', renk: 'bg-green-600' },
     { tarih: '16 Şubat 2026', olay: 'Bahar Dönemi Derslerinin Başlaması', tur: 'Ders', donem: 'Bahar', renk: 'bg-red-600' },
@@ -94,140 +103,187 @@ const takvimVerisi = [
     { tarih: '7 Temmuz 2026', olay: 'Azami Öğrenim Süresini Dolduranlar İçin Sınav Notlarının Sisteme Girişi Son Tarihi', tur: 'Sınav', donem: 'Bahar', renk: 'bg-gray-700' },
 
     // --- RESMİ TATİLLER VE YAZ OKULU (Tüm Metinler Tek Satıra İndirildi) ---
-    { tarih: '28 Ekim 2025 (½ Gün)', olay: 'Cumhuriyet Bayramı', tur: 'Tatil', donem: 'Güz', renk: 'bg-blue-900' },
+    { tarih: '28 Ekim 2025', olay: 'Cumhuriyet Bayramı (1/2 Gün)', tur: 'Tatil', donem: 'Güz', renk: 'bg-blue-900' },
     { tarih: '29 Ekim 2025', olay: 'Cumhuriyet Bayramı', tur: 'Tatil', donem: 'Güz', renk: 'bg-blue-900' },
     { tarih: '1 Ocak 2026', olay: 'Yılbaşı', tur: 'Tatil', donem: 'Güz', renk: 'bg-blue-900' },
-    { tarih: '19 Mart 2026 (Arife ½ Gün)', olay: 'Ramazan Bayramı', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
-    { tarih: '20-22 Mart 2026', olay: 'Ramazan Bayramı', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
+    { tarih: '19 Mart 2026', olay: 'Ramazan Bayramı (Arife 1/2 Gün)', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
+    { tarih: '20 Mart 2026', olay: 'Ramazan Bayramı Başlangıcı', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
     { tarih: '23 Nisan 2026', olay: 'Ulusal Egemenlik ve Çocuk Bayramı', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-900' },
     { tarih: '1 Mayıs 2026', olay: 'Emek ve Dayanışma Günü', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-900' },
     { tarih: '19 Mayıs 2026', olay: 'Atatürk’ü Anma Gençlik ve Spor Bayramı', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-900' },
-    { tarih: '27-30 Mayıs 2026', olay: 'Kurban Bayramı (Arife dahil)', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
+    { tarih: '27 Mayıs 2026', olay: 'Kurban Bayramı (Arife dahil)', tur: 'Tatil', donem: 'Bahar', renk: 'bg-blue-800' },
     { tarih: '15 Temmuz 2026', olay: 'Demokrasi ve Milli Birlik Günü', tur: 'Tatil', donem: 'Yaz', renk: 'bg-blue-900' },
     { tarih: '30 Ağustos 2026', olay: 'Zafer Bayramı', tur: 'Tatil', donem: 'Yaz', renk: 'bg-blue-900' },
     
     // Yaz Öğretimi Akademik İşlemler
-    { tarih: '7-9 Temmuz 2026', olay: 'Yaz Dönemi Ders Seçimi ve Mali Kayıt', tur: 'Kayıt', donem: 'Yaz', renk: 'bg-green-600' },
+    { tarih: '7 Temmuz 2026', olay: 'Yaz Dönemi Ders Seçimi ve Mali Kayıt', tur: 'Kayıt', donem: 'Yaz', renk: 'bg-green-600' },
     { tarih: '10 Temmuz 2026', olay: 'Yaz Döneminde Açılan Derslerin İlanı', tur: 'İlan', donem: 'Yaz', renk: 'bg-green-700' },
     { tarih: '13 Temmuz 2026', olay: 'Yaz Dönemi Derslerinin Başlangıcı', tur: 'Ders', donem: 'Yaz', renk: 'bg-red-800' },
-    { tarih: '16-17 Temmuz 2026', olay: 'Açılan Derslerden Yeni Ders Seçme ve Açılamayan Derslerin Yerine Ders Alma', tur: 'Kayıt', donem: 'Yaz', renk: 'bg-orange-500' },
-    { tarih: '27 Temmuz - 1 Ağustos 2026', olay: 'Yaz Dönemi Ara Sınav Tarihleri', tur: 'Sınav', donem: 'Yaz', renk: 'bg-yellow-700' },
+    { tarih: '16 Temmuz 2026', olay: 'Açılan Derslerden Yeni Ders Seçme İşlemleri', tur: 'Kayıt', donem: 'Yaz', renk: 'bg-orange-500' },
+    { tarih: '27 Temmuz 2026', olay: 'Yaz Dönemi Ara Sınav Tarihleri Başlangıcı', tur: 'Sınav', donem: 'Yaz', renk: 'bg-yellow-700' },
     { tarih: '3 Ağustos 2026', olay: 'Ara Sınav Notlarının Sisteme Girişi İçin Son Tarih', tur: 'Sınav', donem: 'Yaz', renk: 'bg-gray-600' },
     { tarih: '22 Ağustos 2026', olay: 'Yaz Dönemi Derslerinin Son Günü', tur: 'Ders', donem: 'Yaz', renk: 'bg-red-900' },
-    { tarih: '31 Ağustos - 5 Eylül 2026', olay: 'Yaz Dönemi Final Sınavı Tarihleri', tur: 'Sınav', donem: 'Yaz', renk: 'bg-yellow-800' },
+    { tarih: '31 Ağustos 2026', olay: 'Yaz Dönemi Final Sınavı Tarihleri Başlangıcı', tur: 'Sınav', donem: 'Yaz', renk: 'bg-yellow-800' },
     { tarih: '13 Eylül 2026', olay: 'Bütünleme Sınavı Notlarının Sisteme Girişi İçin Son Tarih', tur: 'Sınav', donem: 'Yaz', renk: 'bg-gray-700' },
     { tarih: '14 Eylül 2026', olay: 'Tek Ders Sınavı Başvuruları İçin Son Tarih', tur: 'Sınav', donem: 'Yaz', renk: 'bg-orange-600' },
 ];
 
-
 export default function AkademikTakvim() {
     const navigate = useNavigate();
-    // Filtreleme state'leri
     const [seciliDonem, setSeciliDonem] = useState('Güz');
     const [seciliTur, setSeciliTur] = useState('Hepsi');
+    const [bugun, setBugun] = useState(new Date());
 
-    // Seçenekler, verideki tüm dönemleri ve türleri kapsayacak şekilde güncellendi
-    const donemSecenekleri = ['Güz', 'Bahar', 'Yaz'];
-    const olayTurleri = ['Hepsi', 'Kayıt', 'Ders', 'Sınav', 'Tatil', 'İlan'];
+    useEffect(() => {
+        const timer = setInterval(() => setBugun(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
 
-    // Filtreleme Mantığı (useMemo ile optimize edildi)
+    // 🕒 AKILLI GÜN HESAPLAYICI (FIXED)
+    const gunFarkiHesapla = (tarihMetni) => {
+        if (!tarihMetni || tarihMetni === 'ÖSYM') return { metin: "TARİH BEKLENİYOR", stil: "bg-gray-100 text-gray-400" };
+
+        const ayIsimleri = {
+            "Ocak": 0, "Şubat": 1, "Mart": 2, "Nisan": 3, "Mayıs": 4, "Haziran": 5,
+            "Temmuz": 6, "Ağustos": 7, "Eylül": 8, "Ekim": 9, "Kasım": 10, "Aralık": 11
+        };
+
+        // 1. "10-30 Temmuz 2025" gibi aralıkları temizle, sadece başlangıç gününü al (10 Temmuz 2025)
+        let parca = tarihMetni.split('-')[0].trim().split(' ');
+        
+        // 2. Eğer ilk parça sadece sayıysa (örn: "30 Eylül - 2 Ekim" deki 30) ve ay yoksa, ay olan parçayı bul
+        let gun, ayString, yil;
+
+        if (parca.length === 1) { // Sadece gün sayısı gelmiş olabilir
+             parca = tarihMetni.split(' ').filter(p => p !== '-');
+        }
+
+        gun = parseInt(parca[0]);
+        // Ay ismini bul (Dizi içinde "Ocak" "Temmuz" gibi bir kelime ara)
+        ayString = parca.find(p => ayIsimleri.hasOwnProperty(p.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ]/g, "")));
+        // Yılı bul (4 haneli sayıyı al)
+        yil = parseInt(parca.find(p => /^\d{4}$/.test(p)) || 2025);
+
+        if (isNaN(gun) || !ayString) return { metin: "TARİH BELİRSİZ", stil: "bg-gray-100 text-gray-300" };
+
+        const hedef = new Date(yil, ayIsimleri[ayString.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ]/g, "")], gun);
+        const simdi = new Date(bugun.getFullYear(), bugun.getMonth(), bugun.getDate());
+        const fark = Math.ceil((hedef - simdi) / (1000 * 60 * 60 * 24));
+
+        if (fark === 0) return { metin: "BUGÜN", stil: "bg-red-600 text-white animate-pulse" };
+        if (fark < 0) return { metin: "GEÇTİ", stil: "bg-gray-200 text-gray-500" };
+        return { metin: `${fark} GÜN KALDI`, stil: "bg-blue-50 text-blue-600 border border-blue-100 shadow-sm" };
+    };
+
+    const ilerlemeYuzdesi = useMemo(() => {
+        const start = new Date(seciliDonem === 'Güz' ? 2025 : 2026, seciliDonem === 'Güz' ? 8 : 1, 22);
+        const end = new Date(seciliDonem === 'Güz' ? 2026 : 2026, seciliDonem === 'Güz' ? 0 : 5, 30);
+        const total = end - start;
+        const current = bugun - start;
+        return Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+    }, [seciliDonem, bugun]);
+
     const filtrelenmisOlaylar = useMemo(() => {
-        return takvimVerisi.filter(olay => {
-            const donemFiltresi = olay.donem === seciliDonem;
-            const turFiltresi = seciliTur === 'Hepsi' || olay.tur === seciliTur;
-            return donemFiltresi && turFiltresi;
-        });
+        return takvimVerisi.filter(o => o.donem === seciliDonem && (seciliTur === 'Hepsi' || o.tur === seciliTur));
     }, [seciliDonem, seciliTur]);
 
+    const enYakinOlay = useMemo(() => {
+        return takvimVerisi.find(o => {
+            const res = gunFarkiHesapla(o.tarih);
+            return res.metin.includes("KALDI") || res.metin === "BUGÜN";
+        });
+    }, [bugun, seciliDonem]);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-10 animate-fade-in">
-            {/* ⬅️ Başlık ve Geri Dön */}
-            <header className="flex justify-between items-center mb-8 pb-4 border-b border-red-200">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="flex items-center gap-1 text-red-600 hover:text-red-800 transition font-medium"
-                >
-                    <ArrowLeftIcon className="w-5 h-5" />
-                    <span>Geri Dön</span>
-                </button>
-                <h1 className="text-3xl font-extrabold text-gray-800 flex items-center">
-                    <CalendarDaysIcon className="w-8 h-8 mr-2 text-red-600" /> {akademikYil} Akademik Takvim
-                </h1>
-                <div className="w-20"></div> {/* Hizalama için boşluk */}
-            </header>
+        <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-red-200 overflow-x-hidden pb-20">
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px]" />
+            </div>
 
-            {/* 🗓️ Takvim Kartı */}
-            <div className="max-w-6xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-red-600">
-                
-                {/* Filtre ve Dönem Seçimi */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h2 className="text-xl font-bold text-gray-700">Tarih Detayları</h2>
-                    
-                    <div className="flex gap-4 items-center">
-                        <FunnelIcon className="w-5 h-5 text-gray-500" />
-                        
-                        {/* Dönem Seçimi */}
-                        <select 
-                            className="p-2 border border-red-300 rounded-lg text-sm font-medium bg-red-50 text-red-800 focus:ring-red-500 focus:border-red-500"
-                            value={seciliDonem}
-                            onChange={(e) => setSeciliDonem(e.target.value)}
-                        >
-                            {donemSecenekleri.map(d => (
-                                <option key={d} value={d}>{d} Dönemi}</option>
-                            ))}
-                        </select>
-                        
-                        {/* Olay Türü Filtresi */}
-                        <select 
-                            className="p-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-red-500 focus:border-red-500"
-                            value={seciliTur}
-                            onChange={(e) => setSeciliTur(e.target.value)}
-                        >
-                            {olayTurleri.map(tur => (
-                                <option key={tur} value={tur}>Tür: {tur}</option>
-                            ))}
-                        </select>
+            <header className="relative z-50 bg-white/70 backdrop-blur-xl border-b border-white/50 p-6 sticky top-0 shadow-sm">
+                <div className="max-w-7xl mx-auto flex justify-between items-center">
+                    <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-slate-400 hover:text-red-600 transition-all font-black text-xs tracking-widest">
+                        <ArrowLeftIcon className="w-4 h-4" /> GERİ DÖN
+                    </button>
+                    <div className="text-center">
+                        <h1 className="text-2xl font-[1000] italic tracking-tighter uppercase leading-none">AKADEMİK <span className="text-red-600">TAKVİM</span></h1>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1 italic">Vizia Sync Engine</p>
+                    </div>
+                    <div className="bg-slate-900 px-4 py-2 rounded-2xl shadow-xl border border-white/10 hidden md:flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-[11px] font-black text-white italic tracking-widest uppercase">
+                            {bugun.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        </span>
                     </div>
                 </div>
+            </header>
 
-                <ul className="space-y-4 pt-4 border-t border-gray-100">
-                    {filtrelenmisOlaylar.map((olay, index) => (
-                        <li key={index} className="flex flex-col sm:flex-row items-start sm:items-center p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-red-50 transition-colors">
-                            
-                            {/* Tarih ve Tür (Sol Kısım) */}
-                            <div className="w-full sm:w-1/4 flex items-center gap-3 mb-2 sm:mb-0">
-                                <span className={`w-3 h-3 ${olay.renk} rounded-full flex-shrink-0`} title={olay.tur}></span>
-                                <p className="text-sm font-bold text-red-700">{olay.tarih}</p>
+            <main className="relative z-10 max-w-6xl mx-auto p-6 pt-10">
+                {enYakinOlay && (
+                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-white rounded-[3rem] p-10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.05)] mb-12 relative overflow-hidden group">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                            <div>
+                                <span className="px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block italic">Gelecek İlk Durak</span>
+                                <h2 className="text-4xl font-[1000] italic text-slate-900 leading-tight uppercase tracking-tighter">{enYakinOlay.olay}</h2>
                             </div>
-
-                            {/* Olay Açıklaması (Orta Kısım) */}
-                            <div className="flex-grow">
-                                <p className="text-lg font-semibold text-gray-900">{olay.olay}</p>
+                            <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl text-center min-w-[220px]">
+                                <div className="text-4xl font-[1000] text-white italic tracking-tighter">
+                                    {gunFarkiHesapla(enYakinOlay.tarih).metin}
+                                </div>
+                                <p className="text-[9px] font-black text-red-500 uppercase tracking-[0.3em] mt-2 italic">Harekete Geç</p>
                             </div>
-                            
-                            {/* Etiket (Sağ Kısım) */}
-                            <span className={`ml-0 sm:ml-4 mt-2 sm:mt-0 text-xs font-medium uppercase px-3 py-1 rounded-full text-white`} style={{ backgroundColor: olay.renk }}>
-                                {olay.tur}
-                            </span>
-                        </li>
-                    ))}
-                    {filtrelenmisOlaylar.length === 0 && (
-                        <li className="text-center py-10 text-gray-500 text-lg font-light">
-                            Seçili dönem ve tür için önemli bir olay bulunmamaktadır.
-                        </li>
-                    )}
-                </ul>
-            </div>
-            
-            {/* ℹ️ Not: Detaylı Bilgi Uyarısı */}
-            <div className="max-w-6xl mx-auto mt-6 p-4 bg-red-100 border border-red-300 rounded-lg text-sm text-red-800">
-                ⚠️ **Not:** Bu takvimdeki veriler üniversitenin resmi duyurularından birebir alınmıştır. En kesin bilgi için lütfen resmi duyuruları kontrol ediniz.
-            </div>
+                        </div>
+                        <div className="w-full h-1 bg-slate-100 rounded-full mt-10 overflow-hidden">
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${ilerlemeYuzdesi}%` }} className="h-full bg-red-600" />
+                        </div>
+                    </motion.div>
+                )}
 
-            {/* ⭐ AIChat Bileşeni Buraya Yerleştirildi ⭐ */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+                    <div className="flex bg-white/60 backdrop-blur-md p-1.5 rounded-[2rem] border border-white shadow-sm">
+                        {['Güz', 'Bahar', 'Yaz'].map(d => (
+                            <button key={d} onClick={() => setSeciliDonem(d)} className={`px-10 py-3 rounded-[1.8rem] text-[11px] font-black uppercase italic transition-all duration-500 ${seciliDonem === d ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>
+                                {d} Dönemi
+                            </button>
+                        ))}
+                    </div>
+                    <select onChange={(e) => setSeciliTur(e.target.value)} className="bg-white border-none rounded-[1.5rem] px-8 py-3 text-[11px] font-black uppercase italic shadow-sm outline-none focus:ring-2 focus:ring-red-600">
+                        {['Hepsi', 'Kayıt', 'Ders', 'Sınav', 'Tatil', 'İlan'].map(t => <option key={t} value={t}>{t} Modu</option>)}
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                    <AnimatePresence mode="popLayout">
+                        {filtrelenmisOlaylar.map((olay, idx) => {
+                            const durum = gunFarkiHesapla(olay.tarih);
+                            return (
+                                <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={olay.tarih + idx} className="group bg-white hover:bg-slate-50 border border-white rounded-[2.5rem] p-6 shadow-sm transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="flex items-center gap-6 w-full md:w-1/3 text-left">
+                                        <div className={`w-14 h-14 rounded-2xl ${olay.renk} flex items-center justify-center text-white shadow-lg shrink-0`}>
+                                            <ClockIcon className="w-7 h-7 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{olay.tarih}</p>
+                                            <span className={`text-[8px] font-black px-3 py-1 rounded-full uppercase mt-1 inline-block tracking-widest ${durum.stil}`}>{durum.metin}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex-grow w-full md:w-auto text-left">
+                                        <h3 className="text-lg font-[1000] text-slate-800 italic uppercase tracking-tighter leading-tight group-hover:text-red-600 transition-colors">{olay.olay}</h3>
+                                    </div>
+                                    <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+                                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{olay.tur}</span>
+                                        <button onClick={() => window.open(`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(olay.olay)}&details=Vizia Akademik Takvim`, '_blank')} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                                            <ArrowDownTrayIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+                </div>
+            </main>
             <AIChat />
-
         </div>
     );
 }
