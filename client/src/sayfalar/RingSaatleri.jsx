@@ -33,7 +33,7 @@ export default function RingSaatleri() {
     async function yukle() {
       try {
         setYukleniyor(true);
-        const res = await fetch("http://localhost:5050/api/ringler");
+        const res = await fetch("https://vizia-server.onrender.com/api/ringler");
         if (!res.ok) throw new Error("Veri çekilemedi");
         const data = await res.json();
         const gruplanmis = data.reduce((acc, item) => {

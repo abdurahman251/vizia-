@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, UserPlusIcon, CheckCircleIcon, UsersIcon, AcademicCapIcon, MapPinIcon, CalendarDaysIcon, ClockIcon, PaintBrushIcon, BoltIcon, HeartIcon } from '@heroicons/react/24/outline';
 
 // API Sabiti
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 
 // **********************************************

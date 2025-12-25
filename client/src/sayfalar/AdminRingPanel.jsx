@@ -11,7 +11,7 @@ export default function AdminRingPanel() {
 
   const fetchVeri = async () => {
     try {
-      const res = await fetch("http://localhost:5050/api/ringler");
+      const res = await fetch("https://vizia-server.onrender.com/api/ringler");
       const data = await res.json();
       setVeriler(data);
     } catch {
@@ -25,7 +25,7 @@ export default function AdminRingPanel() {
 
   const ekle = async () => {
     if (!yeni.yon || !yeni.saat) return alert("Yön ve saat zorunlu.");
-    await fetch("http://localhost:5050/api/ringler/ekle", {
+    await fetch("https://vizia-server.onrender.com/api/ringler/ekle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(yeni),
@@ -36,13 +36,13 @@ export default function AdminRingPanel() {
 
   const sil = async (id) => {
     if (!window.confirm("Silmek istediğine emin misin?")) return;
-    await fetch(`http://localhost:5050/api/ringler/${id}`, { method: "DELETE" });
+    await fetch(`https://vizia-server.onrender.com/api/ringler/${id}`, { method: "DELETE" });
     fetchVeri();
   };
 
   const guncelle = async () => {
     if (!duzenlenen.yon || !duzenlenen.saat) return alert("Yön ve saat zorunlu.");
-    await fetch(`http://localhost:5050/api/ringler/${duzenlenen.id}`, {
+    await fetch(`https://vizia-server.onrender.com/api/ringler/${duzenlenen.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(duzenlenen),

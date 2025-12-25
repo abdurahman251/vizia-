@@ -128,7 +128,7 @@ export const sendMessageToGemini = async (messages) => {
     Akademik Takvim:\n${fullCalendar}`;
 
     try {
-        const response = await fetch(`http://localhost:5050/api/ai/chat`, {
+        const response = await fetch(`https://vizia-server.onrender.com/api/ai/chat`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 

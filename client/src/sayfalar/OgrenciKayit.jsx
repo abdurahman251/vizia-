@@ -31,7 +31,7 @@ export default function OgrenciKayit() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5050/api/ogrenciler/kayit", {
+      const res = await fetch("https://vizia-server.onrender.com/api/ogrenciler/kayit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

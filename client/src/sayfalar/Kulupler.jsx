@@ -5,7 +5,7 @@ import { ArrowLeftIcon, MagnifyingGlassIcon, UsersIcon, AcademicCapIcon, BoltIco
 
 import '../App.css'; 
 
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 
 // **********************************************

@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 // API Sabiti ve Kategoriler
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 const Categories = ["AKADEMI", "SPOR", "SANAT", "SOSYAL"];
 
 

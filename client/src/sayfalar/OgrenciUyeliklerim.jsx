@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
 import { UserGroupIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon, BoltIcon, HeartIcon, PaintBrushIcon } from '@heroicons/react/24/outline';
 
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 // UTILITY: Kategori İkonları
 const getCategoryIcon = (category) => {

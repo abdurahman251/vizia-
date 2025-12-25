@@ -23,7 +23,7 @@ export default function OgrenciGiris() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5050/api/ogrenciler/giris", {
+      const res = await fetch("https://vizia-server.onrender.com/api/ogrenciler/giris", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, sifre }),

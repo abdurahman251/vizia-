@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
 import { PaperAirplaneIcon, MegaphoneIcon } from '@heroicons/react/24/outline';
 
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 // **********************************************
 // ADMIN TOPLU MESAJ GÖNDERME SAYFASI

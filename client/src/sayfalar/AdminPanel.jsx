@@ -18,7 +18,7 @@ import {
 } from "@heroicons/react/24/outline"; 
 
 // API Sabiti (Frontend'de tanımlı olmalı)
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 // ===============================================
 // YARDIMCI BİLEŞEN: YÖNETİCİ YAN MENÜSÜ (SIDEBAR)

@@ -6,7 +6,7 @@ import { TrophyIcon, SparklesIcon, CheckBadgeIcon, UserGroupIcon, AcademicCapIco
 import { KULUPLER, SONUC_ESLESTIRME, PUAN_KATEGORILERI } from '../sabitler/SimulasyonSabitler';
 
 // API Sabiti
-const API_URL = "http://localhost:5050"; 
+const API_URL = "https://vizia-server.onrender.com"; 
 
 // UTILITY: Kulüp detaylarını ID'ye göre bulur
 const getKulupDetay = (id) => {

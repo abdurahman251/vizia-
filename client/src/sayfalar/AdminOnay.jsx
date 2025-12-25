@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 
-const API = "http://localhost:5050";
+const API = "https://vizia-server.onrender.com";
 
 export default function AdminOnay() {
   const [ogrenciler, setOgrenciler] = useState([]);
